@@ -1,43 +1,39 @@
 const express = require('express');
-const mongoose = require('mongoose');
-const ytDlp = require('yt-dlp-exec'); // හැම එකටම පාවිච්චි කරන ටූල් එක
-const rateLimit = require('express-rate-limit');
-
+const ytDlp = require('yt-dlp-exec');
 const app = express();
-const mongoUri = 'mongodb+srv://cloud25588_db_user:RQxEbZhj74uGOtb4@cluster0.pptbqdr.mongodb.net/newdtzmini064771?appName=Cluster0';
 
-mongoose.connect(mongoUri);
+// මෙතන තමයි කීස් පාලනය කරන්නේ
+const API_KEYS = {
+    'sasiya_test_01': { limit: 100 },
+    'sasiya_vip_007': { limit: 9999 }
+};
 
-const ApiKey = mongoose.model('ApiKey', new mongoose.Schema({ key: String, remainingRequests: Number }));
-
-// හැම එකකටම පොදු API එකක්
 app.get('/api/download', async (req, res) => {
     const { apiKey, url } = req.query;
 
+    // 1. Key එක චෙක් කිරීම
+    if (!apiKey || !API_KEYS[apiKey]) {
+        return res.status(401).json({ status: false, message: "Invalid API Key" });
+    }
+
+    // 2. Limit එක චෙක් කිරීම
+    if (API_KEYS[apiKey].limit <= 0) {
+        return res.status(403).json({ status: false, message: "Limit exceeded" });
+    }
+
     try {
-        // API Key Check
-        const keyData = await ApiKey.findOne({ key: apiKey });
-        if (!keyData || keyData.remainingRequests <= 0) return res.status(401).json({ status: false, message: "Invalid Key" });
-
-        // ඕනෑම ලින්ක් එකකින් තොරතුරු ගැනීම
-        const data = await ytDlp(url, {
-            dumpSingleJson: true,
-            noCheckCertificates: true,
-        });
-
-        // රিকোවෙස්ට් එක අඩු කරන්න
-        keyData.remainingRequests -= 1;
-        await keyData.save();
+        const data = await ytDlp(url, { dumpSingleJson: true });
+        
+        // රিকোවෙස්ට් එක අඩු කිරීම (මේක ස්ථිර නෑ, සර්වර් එක රීස්ටාර්ට් වුණොත් ආපහු 100 වෙනවා)
+        API_KEYS[apiKey].limit -= 1;
 
         res.json({
             status: true,
-            brand: "Sasiya MD",
             title: data.title,
-            thumbnail: data.thumbnail,
-            download_url: data.url || data.requested_formats[0].url
+            download_url: data.url
         });
     } catch (e) {
-        res.status(500).json({ status: false, message: "Link unsupported or failed" });
+        res.status(500).json({ status: false, message: "Error" });
     }
 });
 
