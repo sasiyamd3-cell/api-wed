@@ -1,0 +1,16 @@
+{
+  "name": "sasiya-md-api",
+  "version": "1.0.0",
+  "description": "Sasiya MD Ultimate Downloader API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^8.0.0",
+    "ytdl-core": "^4.11.5",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0"
+  }
+}
