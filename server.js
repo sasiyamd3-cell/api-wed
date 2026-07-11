@@ -1,40 +1,44 @@
 const express = require('express');
-const ytDlp = require('yt-dlp-exec');
+const ytDlp = require('yt-dlp-exec'); // හරියටම මේක තියෙන්න ඕනේ
 const app = express();
 
-// මෙතන තමයි කීස් පාලනය කරන්නේ
+// කීස් පාලනය
 const API_KEYS = {
-    'sasiya_test_01': { limit: 100 },
-    'sasiya_vip_007': { limit: 9999 }
+    'sasiya_test_01': { limit: 100 }
 };
 
 app.get('/api/download', async (req, res) => {
     const { apiKey, url } = req.query;
 
-    // 1. Key එක චෙක් කිරීම
     if (!apiKey || !API_KEYS[apiKey]) {
         return res.status(401).json({ status: false, message: "Invalid API Key" });
     }
 
-    // 2. Limit එක චෙක් කිරීම
     if (API_KEYS[apiKey].limit <= 0) {
         return res.status(403).json({ status: false, message: "Limit exceeded" });
     }
 
     try {
-        const data = await ytDlp(url, { dumpSingleJson: true });
-        
-        // රিকোවෙස්ට් එක අඩු කිරීම (මේක ස්ථිර නෑ, සර්වර් එක රීස්ටාර්ට් වුණොත් ආපහු 100 වෙනවා)
+        // yt-dlp පාවිච්චි කරලා ලින්ක් එක ගන්න
+        const data = await ytDlp(url, {
+            dumpSingleJson: true,
+            noCheckCertificates: true,
+            format: 'best' 
+        });
+
         API_KEYS[apiKey].limit -= 1;
 
         res.json({
             status: true,
+            brand: "Sasiya MD",
             title: data.title,
             download_url: data.url
         });
     } catch (e) {
-        res.status(500).json({ status: false, message: "Error" });
+        console.error(e); // ලොග් එකේ එරර් එක බලන්න උදව් වෙනවා
+        res.status(500).json({ status: false, message: "Could not fetch data. Check your URL." });
     }
 });
 
-app.listen(process.env.PORT || 3000);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on ${PORT}`));
