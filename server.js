@@ -1,50 +1,54 @@
 const express = require('express');
 const ytDlp = require('yt-dlp-exec');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-
 const app = express();
-app.use(helmet());
 
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
-app.use('/api/', limiter);
-
-//API Keys පාලනය
-const API_KEYS = {
-    'sasiya_test_01': { limit: 100 }
+// කස්ටමර්ලාගේ විස්තර පාලනය
+const users = {
+    'sasiya_vip_001': { coins: 21992 }
 };
 
 app.get('/api/download', async (req, res) => {
     const { apiKey, url } = req.query;
 
-    if (!apiKey || !API_KEYS[apiKey]) {
-        return res.status(401).json({ status: false, message: "Invalid API Key" });
+    // 1. API Key Check
+    if (!apiKey || !users[apiKey]) {
+        return res.json({ status: false, message: "Invalid API Key" });
     }
 
-    if (API_KEYS[apiKey].limit <= 0) {
-        return res.status(403).json({ status: false, message: "Limit exceeded" });
+    // 2. Coins Check
+    if (users[apiKey].coins <= 0) {
+        return res.json({ status: false, message: "No coins left" });
     }
 
     try {
-        // yt-dlp හරහා ලින්ක් එක ලබාගැනීම
+        // Media එක Fetch කිරීම
         const data = await ytDlp(url, {
             dumpSingleJson: true,
             noCheckCertificates: true
         });
 
-        API_KEYS[apiKey].limit -= 1;
+        // Coins අඩු කිරීම
+        users[apiKey].coins -= 1;
 
+        // ඔයා ඉල්ලපු Format එකටම Response එක දීම
         res.json({
             status: true,
-            brand: "Sasiya MD",
-            title: data.title,
-            thumbnail: data.thumbnail,
-            download_url: data.url || (data.requested_formats ? data.requested_formats[0].url : "No direct URL")
+            data: {
+                status: true,
+                result: {
+                    url: url,
+                    title: data.title || "No Title",
+                    thumbnail: data.thumbnail || "",
+                    sd: data.url, 
+                    hd: data.url 
+                }
+            },
+            remainingCoins: users[apiKey].coins
         });
     } catch (e) {
-        res.status(500).json({ status: false, message: "Could not fetch data. Ensure URL is valid." });
+        res.json({ status: false, message: "Download failed" });
     }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT);
