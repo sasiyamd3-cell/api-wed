@@ -9,9 +9,9 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "4.21.0",
-    "yt-dlp-exec": "0.4.11",
-    "helmet": "8.0.0",
-    "express-rate-limit": "7.4.0"
+    "express": "latest",
+    "yt-dlp-exec": "latest",
+    "helmet": "latest",
+    "express-rate-limit": "latest"
   }
 }
